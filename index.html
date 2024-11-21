@@ -1,0 +1,140 @@
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/gh/paulmasson/math@37061d4/build/math.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=0.9">
+<style>
+  span{
+    font-size: 20px;
+  }
+  #sig{
+    color: rgb(255, 0, 0);
+  }
+  #app{
+    color: rgb(0, 0, 255);
+  }
+</style>
+</head>
+<body>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.1/lib/p5.min.js"></script>
+<script>
+let x = [];
+let y = [];
+let dt = 0.003;
+let c1, c2, c3;
+let slider, s1, s2, cnv;
+let mouseInUse = false;
+
+function setup() {
+  cnv = createCanvas(windowWidth * 0.9, windowHeight * 0.8);
+  cnv.position(windowWidth * 0.05, 0);
+  slider = createSlider(1, 100, 40);
+  s1 = createSpan();
+  s2 = createSpan();
+  slider.position(10, height + 50);
+  s1.position(330, height + 50);
+  s2.position(10, height + 80);
+  slider.size(300);
+  slider.input(approximate);
+  for(let i = 0; i < 1; i+=dt){
+    x.push(sin(4 * pi * i) / 3 + sin(5 * pi * i) / 3 + sin(13 * pi * i) / 3);
+    y.push(0);
+  }
+  noFill();
+  approximate();
+  document.body.style.overflow = 'hidden';
+  c1 = color(210, 255, 210);
+  c2 = color(255, 0, 0);
+  c3 = color(0, 0, 255);
+}
+
+function draw(){
+  fill(c1);
+  noStroke();
+  rect(0, 0, width, height);
+  noFill();
+  stroke(0, 255 - frameCount / 2);
+  textSize(height / 10);
+  textAlign(CENTER, CENTER);
+  strokeWeight(1.5);
+  text("DRAW\nANYWHERE", width / 2, height / 2);
+  strokeWeight(3);
+  if(mouseInUse &&
+     -50 <= mouseX && mouseX < width + 50 &&
+     -50 <= pmouseX && pmouseX < width + 50 &&
+     0 <= mouseY && mouseY < height &&
+     0 <= pmouseY && pmouseY < height){
+    xe = max(0, min(x.length, Math.floor(map(mouseX, 0, width, 0, x.length))));
+    xs = max(0, min(x.length, Math.floor(map(pmouseX, 0, width, 0, x.length))));
+    ye = map(mouseY, 0, height, 1, -1);
+    ys = map(pmouseY, 0, height, 1, -1);
+    if(xe < xs){
+      t = xe;
+      xe = xs;
+      xs = t;
+      t = ye;
+      ye = ys;
+      ys = t;
+    }
+    for(let i = xs; i < xe; i++){
+      x[i] = map(i, xs, xe, ys, ye);
+    }
+  }
+
+  stroke(c2);
+  beginShape();
+  for(let i = 0; i < x.length; i++){
+    vertex(width * i / x.length, height / 2 - x[i] * height / 2);
+  }
+  endShape();
+  stroke(c3);
+  beginShape();
+  for(let i = 0; i < y.length; i++){
+    vertex(width * i / y.length, height / 2 - y[i] * height / 2);
+  }
+  endShape();
+}
+
+function approximate(){
+  y.fill(0);
+  s1.html(slider.value());
+  let mse = 0;
+  for(let j = 0.; j < slider.value(); j++){
+    let c = 0;
+    let z = [];
+    for(let i = 0; i < x.length; i++){
+      let a = legendreP(j, map(i, 0, x.length, 0, 1));
+      z.push(a);
+      c += x[i] * a * dt;
+    }
+    c *= (2 * j + 1) / 2;
+    for(let i = 0; i < z.length; i++){
+      y[i] += z[i] * c;
+    }
+  }
+  for(let i = 0; i < x.length; i++){
+    mse += Math.pow(x[i] - y[i], 2);
+  }
+  mse /= x.length;
+  s2.html("<i id='sig'>Signal</i> <i id='app'>Approximation</i></br>MSE= " + mse);
+}
+
+function mousePressed(){
+  mouseInUse = true;
+}
+
+function mouseReleased(){
+  mouseInUse = false;
+  approximate();
+}
+
+function touchStarted(){
+  mouseInUse = true;
+}
+
+function touchEnded(){
+  mouseInUse = false;
+  approximate();
+}
+</script>
+</html>
